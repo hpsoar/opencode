@@ -17,6 +17,8 @@ export namespace SessionStatus {
       }),
       z.object({
         type: z.literal("busy"),
+        operation: z.enum(["generating", "reasoning", "tool-call", "loading"]),
+        detail: z.string().optional(),
       }),
     ])
     .meta({

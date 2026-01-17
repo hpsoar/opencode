@@ -504,6 +504,8 @@ export type SessionStatus =
     }
   | {
       type: "busy"
+      operation: "generating" | "reasoning" | "tool-call" | "loading"
+      detail?: string
     }
 
 export type EventSessionStatus = {

@@ -68,117 +68,24 @@ export function Prompt(props: PromptProps) {
   const toast = useToast()
   const status = createMemo(() => sync.data.session_status?.[props.sessionID ?? ""] ?? { type: "idle" })
 
-  const lastAssistantMessage = createMemo(() => {
-    if (!props.sessionID) return undefined
-    const messages = sync.data.message[props.sessionID]
-    if (!messages) return undefined
-    return messages.findLast((m) => m.role === "assistant")
-  })
-
   const getActivityText = () => {
-    const assistant = lastAssistantMessage()
-    if (!assistant) return ""
-
-    const parts = sync.data.part[assistant.id] ?? []
-
-    const runningTools = parts.filter((p) => p.type === "tool" && p.state.status === "running")
-    if (runningTools.length > 0) {
-      return runningTools.map((t) => (t.type === "tool" ? `${t.tool} running` : "tool running")).join(", ")
-    }
-
-    const pendingTools = parts.filter((p) => p.type === "tool" && p.state.status === "pending")
-    if (pendingTools.length > 0) {
-      return pendingTools.map((t) => (t.type === "tool" ? `${t.tool} preparing` : "tool preparing")).join(", ")
-    }
-
-    const lastPart = parts[parts.length - 1]
-    if (!lastPart) return "waiting..."
-
-    if (lastPart.type === "text") {
-      return lastPart.time?.end ? "text ready" : "generating text..."
-    }
-
-    if (lastPart.type === "reasoning") {
-      return lastPart.time?.end ? "reasoning complete" : "thinking..."
-    }
-
-    if (lastPart.type === "tool") {
-      if (lastPart.state.status === "running") {
-        return `${lastPart.tool} running`
-      }
-      if (lastPart.state.status === "pending") {
-        return `${lastPart.tool} preparing`
-      }
-      if (lastPart.state.status === "completed") {
-        return `${lastPart.tool} completed`
-      }
-      if (lastPart.state.status === "error") {
-        return `${lastPart.tool} failed`
-      }
-      return `${lastPart.tool} processing`
-    }
-
-    if (lastPart.type === "snapshot") {
-      return "tracking file changes..."
-    }
-
-    if (lastPart.type === "patch") {
-      return "applying code patches..."
-    }
-
-    if (lastPart.type === "step-start") {
-      return "starting new step..."
-    }
-
-    if (lastPart.type === "step-finish") {
-      return "finishing current step..."
-    }
-
-    if (lastPart.type === "subtask") {
-      return "processing subtask..."
-    }
-
-    if (lastPart.type === "compaction") {
-      return "compressing conversation history..."
-    }
-
-    if (lastPart.type === "retry") {
-      return "retrying with new approach..."
-    }
-
-    if (lastPart.type === "agent") {
-      return "agent working..."
-    }
-
-    if (lastPart.type === "file") {
-      return `processing file: ${lastPart.url.split("/").pop()}`
-    }
-
-    return "processing..."
-  }
-
-  const [activityIndex, setActivityIndex] = createSignal(0)
-
-  createEffect(() => {
     const s = status()
-    if (s.type !== "busy") return
-
-    const assistant = lastAssistantMessage()
-    if (!assistant) return
-
-    const parts = sync.data.part[assistant.id] ?? []
-    const runningTools = parts.filter((p) => p.type === "tool" && p.state.status === "running")
-
-    if (runningTools.length <= 1) return
-
-    const timer = setInterval(() => {
-      setActivityIndex((i) => (i + 1) % runningTools.length)
-    }, 2000)
-
-    onCleanup(() => {
-      clearInterval(timer)
-    })
-  })
+    if (s.type === "idle") return ""
+    if (s.type === "retry") return ""
+    if (s.type === "busy") {
+      switch (s.operation) {
+        case "generating":
+          return s.detail ?? "generating..."
+        case "reasoning":
+          return s.detail ?? "thinking..."
+        case "tool-call":
+          return `${s.detail ?? "tool"} running`
+        case "loading":
+          return s.detail ?? "loading..."
+      }
+    }
+    return ""
+  }
 
   const history = usePromptHistory()
   const stash = usePromptStash()
@@ -1112,23 +1019,9 @@ export function Prompt(props: PromptProps) {
                     {(() => {
                       const s = status()
                       if (s.type === "idle") return ""
+                      if (s.type === "retry") return ""
                       if (s.type === "busy") {
-                        const activity = getActivityText()
-                        const assistant = lastAssistantMessage()
-                        if (!assistant) return activity
-
-                        const parts = sync.data.part[assistant.id] ?? []
-                        const runningTools = parts.filter((p) => p.type === "tool" && p.state.status === "running")
-
-                        if (runningTools.length > 1) {
-                          const index = activityIndex()
-                          const tool = runningTools[index]
-                          if (tool.type === "tool") {
-                            return `${tool.tool} running (${index + 1}/${runningTools.length})`
-                          }
-                        }
-
-                        return activity
+                        return getActivityText()
                       }
                       return ""
                     })()}

@@ -1,6 +1,6 @@
 import map from "lang-map"
 import { DateTime } from "luxon"
-import { For, Show, Match, Switch, type JSX, createMemo, createSignal, type ParentProps } from "solid-js"
+import { For, Show, Match, Switch, type JSX, createMemo, createSignal, type ParentProps, createEffect } from "solid-js"
 import {
   IconHashtag,
   IconSparkles,
@@ -691,6 +691,7 @@ function TaskTool(props: ToolProps) {
 export function FallbackTool(props: ToolProps) {
   const isCallOmoAgent = props.tool === "call_omo_agent"
   const isBackgroundTask = props.tool === "background_task"
+  const isBackgroundOutput = props.tool === "background_output"
 
   const metaInfo = createMemo(() => {
     if (isCallOmoAgent) {
@@ -713,6 +714,13 @@ export function FallbackTool(props: ToolProps) {
       }
     }
 
+    if (isBackgroundOutput) {
+      const input = props.state.input as any
+      return {
+        taskId: input.task_id ? `bg_${input.task_id}` : null,
+      }
+    }
+
     return null
   })
 
@@ -724,57 +732,76 @@ export function FallbackTool(props: ToolProps) {
   return (
     <>
       <div data-component="tool-title">
-        <span data-slot="name">{props.tool}</span>
+        <span data-slot="name">
+          {(() => {
+            if (isCallOmoAgent && metaInfo()?.description) {
+              return `${metaInfo()!.subagentType || "Agent"} Task: ${metaInfo()!.description}`
+            }
+            if (isBackgroundTask && metaInfo()?.description) {
+              return `Background Task: ${metaInfo()!.description}`
+            }
+            if (isBackgroundOutput && metaInfo()?.taskId) {
+              return `Background Output: ${metaInfo()!.taskId}`
+            }
+            return props.tool
+          })()}
+        </span>
       </div>
 
       <Show when={metaInfo()}>
         {(info) => (
           <div data-component="tool-meta">
-            <Show when={info.description}>
+            <Show when={info().description}>
               <div data-slot="meta-item">
                 <span data-slot="label">Description:</span>
-                <span data-slot="value">{info.description}</span>
+                <span data-slot="value">{info().description}</span>
               </div>
             </Show>
 
-            <Show when={info.subagentType}>
+            <Show when={info().subagentType}>
               <div data-slot="meta-item">
                 <span data-slot="label">Subagent:</span>
-                <span data-slot="value" data-tag={info.subagentType}>{info.subagentType}</span>
+                <span data-slot="value" data-tag={info().subagentType}>
+                  {info().subagentType}
+                </span>
               </div>
             </Show>
 
-            <Show when={info.runInBackground !== undefined}>
+            <Show when={info().runInBackground !== undefined}>
               <div data-slot="meta-item">
                 <span data-slot="label">Mode:</span>
                 <span data-slot="value">
-                  <span data-tag={info.runInBackground ? "background" : "sync"}>
-                    {info.runInBackground ? "Background" : "Sync"}
+                  <span data-tag={info().runInBackground ? "background" : "sync"}>
+                    {info().runInBackground ? "Background" : "Sync"}
                   </span>
                 </span>
               </div>
             </Show>
 
-            <Show when={info.prompt}>
+            <Show when={info().prompt}>
               <div data-slot="meta-item">
                 <span data-slot="label">Prompt:</span>
                 <span data-slot="value" data-prompt="true">
-                  <pre data-value>{info.prompt}</pre>
+                  <pre data-value>{info().prompt}</pre>
                 </span>
               </div>
             </Show>
 
-            <Show when={info.taskId}>
+            <Show when={info().taskId}>
               <div data-slot="meta-item">
                 <span data-slot="label">Task ID:</span>
-                <span data-slot="value" data-monospace="true">{info.taskId}</span>
+                <span data-slot="value" data-monospace="true">
+                  {info().taskId}
+                </span>
               </div>
             </Show>
 
-            <Show when={info.sessionId}>
+            <Show when={info().sessionId}>
               <div data-slot="meta-item">
                 <span data-slot="label">Session ID:</span>
-                <span data-slot="value" data-monospace="true">{info.sessionId}</span>
+                <span data-slot="value" data-monospace="true">
+                  {info().sessionId}
+                </span>
               </div>
             </Show>
           </div>
@@ -784,8 +811,10 @@ export function FallbackTool(props: ToolProps) {
       <Show when={props.state.input && Object.keys(props.state.input).length > 0}>
         <div data-component="tool-args">
           <div data-slot="args-header">
-            <span data-label="Parameters</span>
-            <span data-count="1 entry">{Object.keys(props.state.input).length} {Object.keys(props.state.input).length === 1 ? "entry" : "entries"}</span>
+            <span data-label="Parameters"></span>
+            <span
+              data-count={`${Object.keys(props.state.input).length} ${Object.keys(props.state.input).length === 1 ? "entry" : "entries"}`}
+            ></span>
           </div>
           <For each={flattenToolArgs(props.state.input)}>
             {(arg) => (

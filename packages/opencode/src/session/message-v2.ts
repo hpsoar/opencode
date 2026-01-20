@@ -451,7 +451,6 @@ export namespace MessageV2 {
               type: "text",
               text: part.text,
             })
-          // text/plain and directory files are converted into text parts, ignore them
           if (part.type === "file" && part.mime !== "text/plain" && part.mime !== "application/x-directory")
             userMessage.parts.push({
               type: "file",
@@ -539,8 +538,6 @@ export namespace MessageV2 {
                 errorText: part.state.error,
                 callProviderMetadata: part.metadata,
               })
-            // Handle pending/running tool calls to prevent dangling tool_use blocks
-            // Anthropic/Claude APIs require every tool_use to have a corresponding tool_result
             if (part.state.status === "pending" || part.state.status === "running")
               assistantMessage.parts.push({
                 type: ("tool-" + part.tool) as `tool-${string}`,
@@ -565,7 +562,25 @@ export namespace MessageV2 {
       }
     }
 
-    return convertToModelMessages(result.filter((msg) => msg.parts.some((part) => part.type !== "step-start")))
+    const filtered = result.filter((msg) => {
+      if (msg.parts.length === 0) return false
+
+      const hasNonStepStart = msg.parts.some((part) => part.type !== "step-start")
+
+      if (!hasNonStepStart) return false
+
+      return true
+    })
+
+    try {
+      return convertToModelMessages(filtered)
+    } catch (e) {
+      console.error("Failed to convert messages to ModelMessage format:", e)
+      console.error("Filtered messages count:", filtered.length)
+      console.error("Filtered messages:", JSON.stringify(filtered, null, 2))
+      console.error("Original input:", JSON.stringify(input, null, 2))
+      throw e
+    }
   }
 
   export const stream = fn(Identifier.schema("session"), async function* (sessionID) {

@@ -315,6 +315,7 @@ export default function Page() {
     mobileTab: "session" as "session" | "review",
     newSessionWorktree: "main",
     promptHeight: 0,
+    showScrollToBottom: false,
   })
 
   const renderedUserMessages = createMemo(() => {
@@ -1046,6 +1047,21 @@ export default function Page() {
         return
       }
 
+      // If we have a message hash but the message isn't in visibleUserMessages,
+      // try to find it in the full message list (including reverted messages)
+      const allMessages = messages()
+      const allUserMessages = allMessages.filter((m) => m.role === "user") as UserMessage[]
+      const allMsg = allUserMessages.find((m) => m.id === match[1])
+      if (allMsg) {
+        // The message exists but may not be visible due to revert
+        // Try to scroll to it directly by DOM ID
+        const el = document.getElementById(anchor(allMsg.id))
+        if (el) {
+          scrollToElement(el, behavior)
+          return
+        }
+      }
+
       // If we have a message hash but the message isn't loaded/rendered yet,
       // don't fall back to "bottom". We'll retry once messages arrive.
       return
@@ -1073,6 +1089,10 @@ export default function Page() {
     }
 
     return id
+  }
+
+  const scrollToBottom = () => {
+    autoScroll.forceScrollToBottom()
   }
 
   const scheduleScrollSpy = (container: HTMLDivElement) => {
@@ -1273,6 +1293,11 @@ export default function Page() {
                       <div
                         ref={setScrollRef}
                         onScroll={(e) => {
+                          const el = e.currentTarget
+                          const threshold = 100
+                          const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+                          const shouldShow = distanceFromBottom > threshold
+                          setStore("showScrollToBottom", shouldShow)
                           autoScroll.handleScroll()
                           if (isDesktop()) scheduleScrollSpy(e.currentTarget)
                         }}
@@ -1374,6 +1399,15 @@ export default function Page() {
                           </For>
                         </div>
                       </div>
+
+                      <Show when={store.showScrollToBottom}>
+                        <button
+                          onClick={scrollToBottom}
+                          class="absolute bottom-4 right-4 z-20 w-10 h-10 rounded-full bg-background-stronger border border-border-weak-base shadow-lg flex items-center justify-center hover:bg-background-base transition-colors"
+                        >
+                          <Icon name="chevron-down" size="large" />
+                        </button>
+                      </Show>
                     </div>
                   </Show>
                 </Show>

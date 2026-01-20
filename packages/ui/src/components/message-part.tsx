@@ -1117,6 +1117,132 @@ ToolRegistry.register({
   },
 })
 
+ToolRegistry.register({
+  name: "call_omo_agent",
+  render(props) {
+    const subagentType = () => props.input.subagent_type || "Agent"
+    const description = () => props.input.description || ""
+    const runInBackground = () => props.input.run_in_background
+    const sessionId = () => props.input.session_id
+
+    return (
+      <BasicTool
+        {...props}
+        icon="task"
+        trigger={{
+          title: `${subagentType()} Task`,
+          titleClass: "capitalize",
+          subtitle: description(),
+          args: runInBackground() !== undefined ? [runInBackground() ? "background" : "sync"] : [],
+        }}
+      >
+        <Show when={props.input.prompt}>
+          <div data-component="tool-output" data-scrollable>
+            <Markdown
+              text={`\`\`\`prompt\n${(props.input.prompt || "").slice(0, 1000)}${(props.input.prompt || "").length > 1000 ? "..." : ""}\n\`\`\``}
+            />
+          </div>
+        </Show>
+        <Show when={sessionId()}>
+          <div data-component="tool-meta">
+            <div data-slot="meta-item">
+              <span data-slot="label">Session ID:</span>
+              <span data-slot="value" data-monospace="true">
+                {sessionId()}
+              </span>
+            </div>
+          </div>
+        </Show>
+        <Show when={props.output}>
+          <div data-component="tool-output" data-scrollable>
+            <Markdown text={props.output || ""} />
+          </div>
+        </Show>
+      </BasicTool>
+    )
+  },
+})
+
+ToolRegistry.register({
+  name: "background_task",
+  render(props) {
+    const description = () => props.input.description || ""
+    const taskId = () => (props.input.task_id ? `bg_${props.input.task_id}` : null)
+
+    return (
+      <BasicTool
+        {...props}
+        icon="task"
+        trigger={{
+          title: "Background Task",
+          subtitle: description(),
+        }}
+      >
+        <Show when={taskId()}>
+          <div data-component="tool-meta">
+            <div data-slot="meta-item">
+              <span data-slot="label">Task ID:</span>
+              <span data-slot="value" data-monospace="true">
+                {taskId()}
+              </span>
+            </div>
+          </div>
+        </Show>
+        <Show when={props.output}>
+          <div data-component="tool-output" data-scrollable>
+            <Markdown text={props.output || ""} />
+          </div>
+        </Show>
+      </BasicTool>
+    )
+  },
+})
+
+ToolRegistry.register({
+  name: "background_output",
+  render(props) {
+    const taskId = () => props.input.task_id
+
+    return (
+      <BasicTool
+        {...props}
+        icon="code-lines"
+        trigger={{
+          title: "Background Output",
+          subtitle: taskId() ? `Task ${taskId()}` : "",
+          args: taskId() ? [`bg_${taskId()}`] : [],
+        }}
+      >
+        <Show when={props.output}>
+          <div data-component="tool-output" data-scrollable>
+            <Markdown text={props.output || ""} />
+          </div>
+        </Show>
+      </BasicTool>
+    )
+  },
+})
+
+ToolRegistry.register({
+  name: "background_cancel",
+  render(props) {
+    const all = () => props.input.all
+    const taskId = () => props.input.taskId
+
+    return (
+      <BasicTool
+        {...props}
+        icon="stop"
+        trigger={{
+          title: "Cancel Background Task",
+          subtitle: all() ? "All tasks" : taskId() ? `Task ${taskId()}` : "",
+          args: all() ? ["cancel all"] : taskId() ? [`cancel bg_${taskId()}`] : [],
+        }}
+      />
+    )
+  },
+})
+
 function QuestionPrompt(props: { request: QuestionRequest }) {
   const data = useData()
   const questions = createMemo(() => props.request.questions)

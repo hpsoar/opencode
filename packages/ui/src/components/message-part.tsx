@@ -1168,6 +1168,7 @@ ToolRegistry.register({
   render(props) {
     const description = () => props.input.description || ""
     const taskId = () => (props.input.task_id ? `bg_${props.input.task_id}` : null)
+    const prompt = () => props.input.prompt
 
     return (
       <BasicTool
@@ -1186,6 +1187,13 @@ ToolRegistry.register({
                 {taskId()}
               </span>
             </div>
+          </div>
+        </Show>
+        <Show when={prompt()}>
+          <div data-component="tool-output" data-scrollable>
+            <Markdown
+              text={`\`\`\`prompt\n${(prompt() || "").slice(0, 1000)}${(prompt() || "").length > 1000 ? "..." : ""}\n\`\`\``}
+            />
           </div>
         </Show>
         <Show when={props.output}>

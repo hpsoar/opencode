@@ -1,6 +1,14 @@
 import { createEffect, createSignal, For, Match, Show, Switch, type JSX } from "solid-js"
 import { Collapsible } from "./collapsible"
 import { Icon, IconProps } from "./icon"
+import { Markdown } from "./markdown"
+
+interface GenericToolProps {
+  tool: string
+  input?: Record<string, any>
+  output?: string
+  hideDetails?: boolean
+}
 
 export type TriggerTitle = {
   title: string
@@ -113,6 +121,47 @@ export function BasicTool(props: BasicToolProps) {
   )
 }
 
-export function GenericTool(props: { tool: string; hideDetails?: boolean }) {
-  return <BasicTool icon="mcp" trigger={{ title: props.tool }} hideDetails={props.hideDetails} />
+export function GenericTool(props: GenericToolProps) {
+  const formatTrigger = () => {
+    const input = props.input
+    if (!input || Object.keys(input).length === 0) {
+      return { title: props.tool }
+    }
+
+    const entries = Object.entries(input)
+    if (entries.length === 1 && typeof entries[0][1] === "string") {
+      const [key, value] = entries[0]
+      const truncated = value.length > 50 ? value.slice(0, 50) + "..." : value
+      return { title: props.tool, subtitle: truncated }
+    }
+
+    const args = entries.slice(0, 2).map(([k, value]) => {
+      const strValue = typeof value === "string" ? value : JSON.stringify(value)
+      const truncated = strValue.length > 30 ? strValue.slice(0, 30) + "..." : strValue
+      return `${k}=${truncated}`
+    })
+    const moreCount = entries.length > 2 ? entries.length - 2 : undefined
+
+    return {
+      title: props.tool,
+      args: args.length > 0 ? (moreCount !== undefined ? [...args, `+${moreCount}`] : args) : undefined,
+    }
+  }
+
+  const trigger = formatTrigger()
+
+  return (
+    <BasicTool icon="mcp" trigger={trigger} hideDetails={props.hideDetails}>
+      <Show when={props.input && Object.keys(props.input).length > 0}>
+        <div data-component="tool-output" data-scrollable>
+          <Markdown text={`\`\`\`json\n${JSON.stringify(props.input, null, 2)}\n\`\`\``} />
+        </div>
+      </Show>
+      <Show when={props.output}>
+        <div data-component="tool-output" data-scrollable>
+          <Markdown text={props.output || ""} />
+        </div>
+      </Show>
+    </BasicTool>
+  )
 }

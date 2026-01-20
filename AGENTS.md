@@ -53,7 +53,7 @@ bun run --cwd packages/app dev
   - TUI: `packages/opencode/src/cli/cmd/tui/` (SolidJS + OpenTUI)
 - `packages/app` (`@opencode-ai/app`): the **interactive web client app** (SolidJS + Vite) built on `@opencode-ai/ui` + `@opencode-ai/sdk`
   - Easy to confuse with `packages/web` — `app` is the product UI, not the docs/marketing site.
-- `packages/web` (`@opencode-ai/web`): the **website/docs** (Astro + Starlight + Solid)
+- `packages/web` (`@opencode-ai/web`): the **website/docs** (Astro + Starlight + Solid) + share viewer (`/s/:id`) + docs/raw endpoints + build-time config schema generation
 - `packages/desktop`: desktop app (Tauri) wrapping `packages/app`
 - `packages/sdk/js`: TypeScript SDK used by UI clients
 - `packages/plugin`: source for `@opencode-ai/plugin`

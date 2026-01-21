@@ -1403,7 +1403,7 @@ export default function Page() {
                       <Show when={store.showScrollToBottom}>
                         <button
                           onClick={scrollToBottom}
-                          class="absolute bottom-4 right-4 z-20 w-10 h-10 rounded-full bg-background-stronger border border-border-weak-base shadow-lg flex items-center justify-center hover:bg-background-base transition-colors"
+                          class="absolute bottom-[calc(var(--prompt-height,8rem)+1rem)] right-4 z-[60] w-10 h-10 rounded-full bg-background-stronger border border-border-weak-base shadow-lg flex items-center justify-center hover:bg-background-base transition-colors"
                         >
                           <Icon name="chevron-down" size="large" />
                         </button>

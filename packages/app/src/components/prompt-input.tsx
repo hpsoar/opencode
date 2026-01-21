@@ -985,7 +985,10 @@ export const PromptInput: Component<PromptInputProps> = (props) => {
     event.preventDefault()
 
     const currentPrompt = prompt.current()
-    const text = currentPrompt.map((part) => ("content" in part ? part.content : "")).join("")
+    const text = currentPrompt
+      .map((part) => ("content" in part ? part.content : ""))
+      .join("")
+      .replace(/\u200B/g, "")
     const images = imageAttachments().slice()
     const mode = store.mode
 

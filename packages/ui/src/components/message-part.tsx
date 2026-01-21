@@ -775,7 +775,14 @@ ToolRegistry.register({
           subtitle: props.input.url || "",
           args: props.input.format ? ["format=" + props.input.format] : [],
           action: (
-            <div data-component="tool-action">
+            <div
+              data-component="tool-action"
+              style={{ cursor: "pointer" }}
+              onClick={(e) => {
+                e.stopPropagation()
+                window.open(props.input.url, "_blank")
+              }}
+            >
               <Icon name="square-arrow-top-right" size="small" />
             </div>
           ),

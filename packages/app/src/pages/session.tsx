@@ -35,7 +35,7 @@ import { DialogFork } from "@/components/dialog-fork"
 import { useCommand } from "@/context/command"
 import { useNavigate, useParams } from "@solidjs/router"
 import { UserMessage } from "@opencode-ai/sdk/v2"
-import type { FileDiff } from "@opencode-ai/sdk/v2/client"
+import type { Message, FileDiff } from "@opencode-ai/sdk/v2/client"
 import { useSDK } from "@/context/sdk"
 import { usePrompt } from "@/context/prompt"
 import { extractPromptFromParts } from "@/utils/prompt"
@@ -286,7 +286,18 @@ export default function Page() {
     return sync.session.history.loading(id)
   })
   const emptyUserMessages: UserMessage[] = []
-  const userMessages = createMemo(() => messages().filter((m) => m.role === "user") as UserMessage[], emptyUserMessages)
+
+  // Filter out messages that only have synthetic parts (no real user content)
+  const isSyntheticOnlyMessage = (message: Message): boolean => {
+    const parts = sync.data.part[message.id] ?? []
+    const nonSyntheticTextParts = parts.filter((p) => p.type === "text" && !p.synthetic && !p.ignored)
+    return nonSyntheticTextParts.length === 0 && parts.length === 1
+  }
+
+  const userMessages = createMemo(
+    () => messages().filter((m) => m.role === "user" && !isSyntheticOnlyMessage(m)) as UserMessage[],
+    emptyUserMessages,
+  )
   const visibleUserMessages = createMemo(() => {
     const revert = revertMessageID()
     if (!revert) return userMessages()

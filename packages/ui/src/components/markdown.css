@@ -111,6 +111,30 @@
     border: 0.5px solid var(--border-weak-base);
   }
 
+  [data-slot="markdown-code"] {
+    position: relative;
+  }
+
+  [data-slot="markdown-code-actions"] {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    z-index: 1;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 120ms ease;
+  }
+
+  [data-slot="markdown-code-actions"] [data-component="icon-button"] {
+    pointer-events: auto;
+  }
+
+  [data-slot="markdown-code"]:hover [data-slot="markdown-code-actions"],
+  [data-slot="markdown-code-actions"]:focus-within {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
   pre {
     margin-top: 2rem;
     margin-bottom: 2rem;

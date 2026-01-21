@@ -49,6 +49,7 @@ import {
 import type { DragEvent } from "@thisbeyond/solid-dnd"
 import { useProviders } from "@/hooks/use-providers"
 import { showToast, Toast, toaster } from "@opencode-ai/ui/toast"
+import { UserMessage } from "@opencode-ai/sdk/v2"
 import { useGlobalSDK } from "@/context/global-sdk"
 import { useNotification } from "@/context/notification"
 import { usePermission } from "@/context/permission"
@@ -1347,8 +1348,18 @@ export default function Layout(props: ParentProps) {
       return agent?.color
     })
 
-    const hoverMessages = createMemo(() =>
-      sessionStore.message[props.session.id]?.filter((message) => message.role === "user"),
+    // Filter out messages that only have synthetic parts (no real user content)
+    const isSyntheticOnlyMessage = (message: Message): boolean => {
+      const parts = sessionStore.part[message.id] ?? []
+      const nonSyntheticTextParts = parts.filter((p) => p.type === "text" && !p.synthetic && !p.ignored)
+      return nonSyntheticTextParts.length === 0 && parts.length === 1
+    }
+
+    const hoverMessages = createMemo(
+      () =>
+        (sessionStore.message[props.session.id]?.filter(
+          (message) => message.role === "user" && !isSyntheticOnlyMessage(message),
+        ) ?? []) as UserMessage[],
     )
     const hoverReady = createMemo(() => sessionStore.message[props.session.id] !== undefined)
     const hoverAllowed = createMemo(() => !props.mobile && layout.sidebar.opened())

@@ -1412,12 +1412,26 @@ export default function Page() {
                       </div>
 
                       <Show when={store.showScrollToBottom}>
-                        <button
-                          onClick={scrollToBottom}
-                          class="absolute bottom-[calc(var(--prompt-height,8rem)+1rem)] right-4 z-[60] w-10 h-10 rounded-full bg-background-stronger border border-border-weak-base shadow-lg flex items-center justify-center hover:bg-background-base transition-colors"
+                        <div
+                          classList={{
+                            "absolute bottom-[calc(var(--prompt-height,8rem)+1rem)] left-0 right-0 z-[60] pointer-events-none": true,
+                            "flex justify-center": true,
+                          }}
                         >
-                          <Icon name="chevron-down" size="large" />
-                        </button>
+                          <div
+                            classList={{
+                              "w-full px-4 md:px-6 pointer-events-auto": true,
+                              "md:max-w-200": !showTabs(),
+                            }}
+                          >
+                            <button
+                              onClick={scrollToBottom}
+                              class="ml-auto w-10 h-10 rounded-full bg-background-stronger border border-border-weak-base shadow-lg flex items-center justify-center hover:bg-background-base transition-colors"
+                            >
+                              <Icon name="chevron-down" size="large" />
+                            </button>
+                          </div>
+                        </div>
                       </Show>
                     </div>
                   </Show>

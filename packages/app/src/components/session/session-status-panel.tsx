@@ -8,12 +8,14 @@ import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { useLayout } from "@/context/layout"
 import type { IconProps } from "@opencode-ai/ui/icon"
+import { useLocal } from "@/context/local"
 
 export function SessionStatusPanel() {
   const params = useParams()
   const sync = useSync()
   const sdk = useSDK()
   const layout = useLayout()
+  const local = useLocal()
 
   const sessionID = createMemo(() => params.id)
   const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
@@ -38,6 +40,15 @@ export function SessionStatusPanel() {
     if (s.type === "retry")
       return { label: "Retrying", icon: "brain" as IconProps["name"], tone: "text-icon-warning-base" }
     return { label: "Working", icon: "brain" as IconProps["name"], tone: "text-icon-info-base" }
+  })
+
+  const who = createMemo(() => {
+    const agent = local.agent.current()
+    const model = local.model.current()
+    return {
+      agent: agent?.name ?? "Unknown",
+      model: model?.provider?.name ? `${model.name} · ${model.provider.name}` : (model?.name ?? ""),
+    }
   })
 
   const text = createMemo(() => {
@@ -71,28 +82,29 @@ export function SessionStatusPanel() {
     <Show when={show()}>
       <div class="sticky top-0 z-20 w-full border-b border-border-weak-base bg-background-stronger/95 backdrop-blur-sm">
         <div class="px-4 md:px-6 py-2 flex items-center gap-3 md:gap-4">
-          <div class="flex items-center gap-2 min-w-0 flex-1">
-            <Icon
-              name={kind().icon}
-              size="small"
-              class={`shrink-0 ${kind().tone} ${status().type === "busy" ? "animate-pulse" : ""}`}
-            />
-            <div class="flex flex-col min-w-0 flex-1">
-              <span class={`text-12-medium ${kind().tone} truncate`}>{kind().label}</span>
-              <Show when={text()}>{(t) => <span class="text-11-regular text-text-weak truncate">{t()}</span>}</Show>
+          <Icon
+            name={kind().icon}
+            size="small"
+            class={`shrink-0 ${kind().tone} ${status().type === "busy" ? "animate-pulse" : ""}`}
+          />
+
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class={`text-12-medium ${kind().tone} truncate`}>{who().agent}</span>
+              <Show when={who().model}>
+                <span class="text-12-regular text-text-weak truncate">{who().model}</span>
+              </Show>
+            </div>
+
+            <div class="flex items-center justify-between gap-2 min-w-0">
+              <Show when={text()}>
+                {(t) => <span class="text-11-regular text-text-weak truncate flex-1">{t()}</span>}
+              </Show>
+              <Show when={age()}>
+                {(a) => <span class="text-11-regular text-text-weaker shrink-0 whitespace-nowrap">{a()} ago</span>}
+              </Show>
             </div>
           </div>
-
-          <Show when={age()}>
-            {(a) => (
-              <div class="flex items-center gap-1.5 text-11-regular text-text-weak shrink-0">
-                <Show when={busy()} fallback="Updated">
-                  <span>Last update</span>
-                </Show>
-                <span class="text-text-strong font-medium">{a()} ago</span>
-              </div>
-            )}
-          </Show>
 
           <Show when={busy()}>
             <Tooltip value="Cancel">

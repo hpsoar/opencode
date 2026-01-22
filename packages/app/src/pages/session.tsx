@@ -837,6 +837,14 @@ export default function Page() {
 
   const isWorking = createMemo(() => status().type !== "idle")
 
+  // Only used to retry deep-linked message navigation when the target message
+  // wasn't available at the time we applied the hash.
+  //
+  // Without this, keeping the hash as `#message-{id}` can cause us to
+  // repeatedly snap back to that message whenever the message list updates
+  // (e.g. turn backfill or streaming updates), making scrolling feel "stuck".
+  const [pendingHashMessage, setPendingHashMessage] = createSignal<string | undefined>(undefined)
+
   const autoScroll = createAutoScroll({
     working: () => true,
   })
@@ -1046,6 +1054,7 @@ export default function Page() {
   const applyHash = (behavior: ScrollBehavior) => {
     const hash = window.location.hash.slice(1)
     if (!hash) {
+      setPendingHashMessage(undefined)
       autoScroll.forceScrollToBottom()
       return
     }
@@ -1054,36 +1063,37 @@ export default function Page() {
     if (match) {
       const msg = visibleUserMessages().find((m) => m.id === match[1])
       if (msg) {
+        setPendingHashMessage(undefined)
         scrollToMessage(msg, behavior)
         return
       }
 
       // If we have a message hash but the message isn't in visibleUserMessages,
-      // try to find it in the full message list (including reverted messages)
+      // try to find it in the full message list (including reverted messages).
+      // If it exists, `scrollToMessage` will adjust `turnStart` to render it.
       const allMessages = messages()
       const allUserMessages = allMessages.filter((m) => m.role === "user") as UserMessage[]
       const allMsg = allUserMessages.find((m) => m.id === match[1])
       if (allMsg) {
-        // The message exists but may not be visible due to revert
-        // Try to scroll to it directly by DOM ID
-        const el = document.getElementById(anchor(allMsg.id))
-        if (el) {
-          scrollToElement(el, behavior)
-          return
-        }
+        setPendingHashMessage(undefined)
+        scrollToMessage(allMsg, behavior)
+        return
       }
 
       // If we have a message hash but the message isn't loaded/rendered yet,
       // don't fall back to "bottom". We'll retry once messages arrive.
+      setPendingHashMessage(match[1])
       return
     }
 
     const target = document.getElementById(hash)
     if (target) {
+      setPendingHashMessage(undefined)
       scrollToElement(target, behavior)
       return
     }
 
+    setPendingHashMessage(undefined)
     autoScroll.forceScrollToBottom()
   }
 
@@ -1130,6 +1140,8 @@ export default function Page() {
     const ready = messagesReady()
     if (!sessionID || !ready) return
 
+    setPendingHashMessage(undefined)
+
     requestAnimationFrame(() => {
       applyHash("auto")
     })
@@ -1145,20 +1157,14 @@ export default function Page() {
     visibleUserMessages().length
     store.turnStart
 
-    const targetId =
-      pendingMessage() ??
-      (() => {
-        const hash = window.location.hash.slice(1)
-        const match = hash.match(/^message-(.+)$/)
-        if (!match) return undefined
-        return match[1]
-      })()
+    const targetId = pendingMessage() ?? pendingHashMessage()
     if (!targetId) return
     if (store.messageId === targetId) return
 
     const msg = visibleUserMessages().find((m) => m.id === targetId)
     if (!msg) return
     if (pendingMessage() === targetId) setPendingMessage(undefined)
+    if (pendingHashMessage() === targetId) setPendingHashMessage(undefined)
     requestAnimationFrame(() => scrollToMessage(msg, "auto"))
   })
 
@@ -1167,7 +1173,10 @@ export default function Page() {
     const ready = messagesReady()
     if (!sessionID || !ready) return
 
-    const handler = () => requestAnimationFrame(() => applyHash("auto"))
+    const handler = () => {
+      setPendingHashMessage(undefined)
+      requestAnimationFrame(() => applyHash("auto"))
+    }
     window.addEventListener("hashchange", handler)
     onCleanup(() => window.removeEventListener("hashchange", handler))
   })

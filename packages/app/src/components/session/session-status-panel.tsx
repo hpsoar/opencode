@@ -9,6 +9,7 @@ import { useSDK } from "@/context/sdk"
 import { useLayout } from "@/context/layout"
 import type { IconProps } from "@opencode-ai/ui/icon"
 import { useLocal } from "@/context/local"
+import type { ToolPart } from "@opencode-ai/sdk/v2"
 
 export function SessionStatusPanel() {
   const params = useParams()
@@ -51,7 +52,68 @@ export function SessionStatusPanel() {
     }
   })
 
+  const running = createMemo(() => {
+    const id = sessionID()
+    if (!id) return
+    const messages = sync.data.message[id]
+    if (!messages) return
+
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const msg = messages[i]
+      const parts = sync.data.part[msg.id]
+      if (!parts) continue
+
+      for (let j = parts.length - 1; j >= 0; j--) {
+        const part = parts[j]
+        if (!part) continue
+        if (part.type !== "tool") continue
+        const tool = part as ToolPart
+        if (tool.state.status === "running" || tool.state.status === "pending") {
+          return { tool, messageID: msg.id }
+        }
+      }
+    }
+  })
+
+  const delegation = createMemo(() => {
+    const run = running()
+    if (!run) return
+    if (run.tool.tool !== "task") return
+
+    const meta = run.tool.metadata as { sessionId?: string; summary?: unknown } | undefined
+    const sessionId = meta?.sessionId
+    if (!sessionId) return
+
+    const summary = meta?.summary as
+      | { id: string; tool: string; state: { status: string; title?: string } }[]
+      | undefined
+
+    const active = summary?.findLast((x) => x.state.status === "running")
+    const latest = summary?.findLast((x) => x.state.status === "completed")
+
+    return {
+      child: sessionId,
+      subagent: (run.tool.state.input as any)?.subagent_type as string | undefined,
+      description: (run.tool.state.input as any)?.description as string | undefined,
+      tool: active?.tool,
+      title: active?.state.title ?? latest?.state.title,
+    }
+  })
+
   const text = createMemo(() => {
+    const d = delegation()
+    if (d) {
+      const agent = d.subagent ? `${d.subagent} agent` : "subagent"
+      const tool = d.tool ? ` · ${d.tool}` : ""
+      const title = d.title ? ` · ${d.title}` : ""
+      return `Delegating to ${agent}${tool}${title}`
+    }
+
+    const run = running()
+    if (run) {
+      return `Running ${run.tool.tool}`
+    }
+
     const s = status()
     if (s.type === "idle") return
     if (s.type === "retry") {

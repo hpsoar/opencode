@@ -56,6 +56,12 @@ type State = {
   session_status: {
     [sessionID: string]: SessionStatus
   }
+  session_activity: {
+    [sessionID: string]: {
+      last: number
+      type: string
+    }
+  }
   session_diff: {
     [sessionID: string]: FileDiff[]
   }
@@ -135,6 +141,7 @@ function createGlobalSync() {
           session: [],
           sessionTotal: 0,
           session_status: {},
+          session_activity: {},
           session_diff: {},
           todo: {},
           permission: {},
@@ -346,6 +353,22 @@ function createGlobalSync() {
     }
 
     const [store, setStore] = child(directory)
+
+    const touch = (sessionID: string, type: string) => {
+      if (!sessionID) return
+      setStore("session_activity", sessionID, {
+        last: Date.now(),
+        type,
+      })
+    }
+
+    if (event.type === "session.status") {
+      touch(event.properties.sessionID, event.type)
+    }
+
+    if (event.type === "message.part.updated") {
+      touch(event.properties.part.sessionID, event.type)
+    }
     switch (event.type) {
       case "server.instance.disposed": {
         bootstrapInstance(directory)

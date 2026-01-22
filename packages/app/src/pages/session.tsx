@@ -50,6 +50,7 @@ import {
   SortableTerminalTab,
   NewSessionView,
 } from "@/components/session"
+import { SessionStallWarning } from "@/components/session/session-stall-warning"
 import { usePlatform } from "@/context/platform"
 import { navMark, navParams } from "@/utils/perf"
 import { same } from "@/utils/same"
@@ -1219,6 +1220,7 @@ export default function Page() {
 
   return (
     <div class="relative bg-background-base size-full overflow-hidden flex flex-col">
+      <SessionStallWarning />
       <SessionHeader />
       <div class="flex-1 min-h-0 flex flex-col md:flex-row">
         {/* Mobile tab bar - only shown on mobile when user opened review */}

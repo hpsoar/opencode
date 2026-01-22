@@ -19,6 +19,7 @@ import { Tooltip, TooltipKeybind } from "@opencode-ai/ui/tooltip"
 import { Popover } from "@opencode-ai/ui/popover"
 import { TextField } from "@opencode-ai/ui/text-field"
 import { Keybind } from "@opencode-ai/ui/keybind"
+import { SessionStatusBar } from "./session-status-bar"
 
 export function SessionHeader() {
   const globalSDK = useGlobalSDK()
@@ -149,6 +150,7 @@ export function SessionHeader() {
         {(mount) => (
           <Portal mount={mount()}>
             <div class="flex items-center gap-3">
+              <SessionStatusBar />
               {/* <div class="hidden md:flex items-center gap-1"> */}
               {/*   <Button */}
               {/*     size="small" */}

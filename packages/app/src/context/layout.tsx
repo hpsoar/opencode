@@ -33,6 +33,9 @@ type SessionTabs = {
 type SessionView = {
   scroll: Record<string, SessionScroll>
   reviewOpen?: string[]
+  status?: {
+    shown?: boolean
+  }
 }
 
 export type LocalProject = Partial<Project> & { worktree: string; expanded: boolean }
@@ -399,6 +402,7 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
         touch(sessionKey)
         scroll.seed(sessionKey)
         const s = createMemo(() => store.sessionView[sessionKey] ?? { scroll: {} })
+        const statusShown = createMemo(() => store.sessionView[sessionKey]?.status?.shown ?? true)
         const terminalOpened = createMemo(() => store.terminal?.opened ?? false)
         const reviewPanelOpened = createMemo(() => store.review?.panelOpened ?? true)
 
@@ -471,6 +475,20 @@ export const { use: useLayout, provider: LayoutProvider } = createSimpleContext(
 
               if (same(current.reviewOpen, open)) return
               setStore("sessionView", sessionKey, "reviewOpen", open)
+            },
+          },
+          status: {
+            shown: statusShown,
+            setShown(shown: boolean) {
+              const current = store.sessionView[sessionKey]
+              if (!current) {
+                setStore("sessionView", sessionKey, {
+                  scroll: {},
+                  status: { shown },
+                })
+                return
+              }
+              setStore("sessionView", sessionKey, "status", { ...(current.status ?? {}), shown })
             },
           },
         }

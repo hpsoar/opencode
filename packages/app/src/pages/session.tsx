@@ -51,7 +51,7 @@ import {
   NewSessionView,
 } from "@/components/session"
 import { SessionStallWarning } from "@/components/session/session-stall-warning"
-import { usePlatform } from "@/context/platform"
+import { SessionStatusPanel } from "@/components/session/session-status-panel"
 import { navMark, navParams } from "@/utils/perf"
 import { same } from "@/utils/same"
 
@@ -162,7 +162,6 @@ export default function Page() {
   const dialog = useDialog()
   const codeComponent = useCodeComponent()
   const command = useCommand()
-  const platform = usePlatform()
   const params = useParams()
   const navigate = useNavigate()
   const sdk = useSDK()
@@ -1261,6 +1260,7 @@ export default function Page() {
             "--prompt-height": store.promptHeight ? `${store.promptHeight}px` : undefined,
           }}
         >
+          <SessionStatusPanel />
           <div class="flex-1 min-h-0 overflow-hidden">
             <Switch>
               <Match when={params.id}>

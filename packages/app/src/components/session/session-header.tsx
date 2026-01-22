@@ -16,10 +16,10 @@ import { Icon } from "@opencode-ai/ui/icon"
 import { IconButton } from "@opencode-ai/ui/icon-button"
 import { Button } from "@opencode-ai/ui/button"
 import { Tooltip, TooltipKeybind } from "@opencode-ai/ui/tooltip"
+import { DropdownMenu } from "@opencode-ai/ui/dropdown-menu"
 import { Popover } from "@opencode-ai/ui/popover"
 import { TextField } from "@opencode-ai/ui/text-field"
 import { Keybind } from "@opencode-ai/ui/keybind"
-import { SessionStatusBar } from "./session-status-bar"
 
 export function SessionHeader() {
   const globalSDK = useGlobalSDK()
@@ -48,6 +48,7 @@ export function SessionHeader() {
   const shareEnabled = createMemo(() => sync.data.config.share !== "disabled")
   const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
   const view = createMemo(() => layout.view(sessionKey()))
+  const statusShown = createMemo(() => view().status?.shown() ?? true)
 
   const [state, setState] = createStore({
     share: false,
@@ -150,7 +151,6 @@ export function SessionHeader() {
         {(mount) => (
           <Portal mount={mount()}>
             <div class="flex items-center gap-3">
-              <SessionStatusBar />
               {/* <div class="hidden md:flex items-center gap-1"> */}
               {/*   <Button */}
               {/*     size="small" */}
@@ -174,6 +174,26 @@ export function SessionHeader() {
               {/*   <SessionMcpIndicator /> */}
               {/* </div> */}
               <div class="flex items-center gap-1">
+                <Show when={params.id}>
+                  <DropdownMenu>
+                    <Tooltip value="Session options" placement="top">
+                      <DropdownMenu.Trigger as={IconButton} icon="dot-grid" variant="ghost" class="size-6 rounded-md" />
+                    </Tooltip>
+                    <DropdownMenu.Portal>
+                      <DropdownMenu.Content class="mt-1">
+                        <DropdownMenu.Item
+                          onSelect={() => {
+                            view().status?.setShown(!statusShown())
+                          }}
+                        >
+                          <DropdownMenu.ItemLabel>
+                            {statusShown() ? "Hide status" : "Show status"}
+                          </DropdownMenu.ItemLabel>
+                        </DropdownMenu.Item>
+                      </DropdownMenu.Content>
+                    </DropdownMenu.Portal>
+                  </DropdownMenu>
+                </Show>
                 <Show when={currentSession()?.summary?.files}>
                   <TooltipKeybind
                     class="hidden md:block shrink-0"

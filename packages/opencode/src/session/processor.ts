@@ -56,18 +56,13 @@ export namespace SessionProcessor {
               input.abort.throwIfAborted()
               switch (value.type) {
                 case "start":
-                  SessionStatus.set(input.sessionID, {
-                    type: "busy",
-                    operation: "generating",
-                    detail: "Generating response...",
-                  })
+                  SessionStatus.set(input.sessionID, { type: "busy" })
                   break
 
                 case "reasoning-start":
                   if (value.id in reasoningMap) {
                     continue
                   }
-                  SessionStatus.set(input.sessionID, { type: "busy", operation: "reasoning", detail: "Thinking..." })
                   reasoningMap[value.id] = {
                     id: Identifier.ascending("part"),
                     messageID: input.assistantMessage.id,
@@ -131,7 +126,6 @@ export namespace SessionProcessor {
                 case "tool-call": {
                   const match = toolcalls[value.toolCallId]
                   if (match) {
-                    SessionStatus.set(input.sessionID, { type: "busy", operation: "tool-call", detail: value.toolName })
                     const part = await Session.updatePart({
                       ...match,
                       tool: value.toolName,
@@ -178,16 +172,11 @@ export namespace SessionProcessor {
                 case "tool-result": {
                   const match = toolcalls[value.toolCallId]
                   if (match && match.state.status === "running") {
-                    SessionStatus.set(input.sessionID, {
-                      type: "busy",
-                      operation: "generating",
-                      detail: "Processing result...",
-                    })
                     await Session.updatePart({
                       ...match,
                       state: {
                         status: "completed",
-                        input: value.input,
+                        input: value.input ?? match.state.input,
                         output: value.output.output,
                         metadata: value.output.metadata,
                         title: value.output.title,
@@ -207,16 +196,11 @@ export namespace SessionProcessor {
                 case "tool-error": {
                   const match = toolcalls[value.toolCallId]
                   if (match && match.state.status === "running") {
-                    SessionStatus.set(input.sessionID, {
-                      type: "busy",
-                      operation: "generating",
-                      detail: "Processing error...",
-                    })
                     await Session.updatePart({
                       ...match,
                       state: {
                         status: "error",
-                        input: value.input,
+                        input: value.input ?? match.state.input,
                         error: (value.error as any).toString(),
                         time: {
                           start: match.state.time.start,
@@ -376,6 +360,7 @@ export namespace SessionProcessor {
               sessionID: input.assistantMessage.sessionID,
               error: input.assistantMessage.error,
             })
+            SessionStatus.set(input.sessionID, { type: "idle" })
           }
           if (snapshot) {
             const patch = await Snapshot.patch(snapshot)

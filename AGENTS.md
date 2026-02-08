@@ -1,121 +1,112 @@
-# AGENTS.md (repo-wide)
+- To regenerate the JavaScript SDK, run `./packages/sdk/js/script/build.ts`.
+- ALWAYS USE PARALLEL TOOLS WHEN APPLICABLE.
+- The default branch in this repo is `dev`.
+- Local `main` ref may not exist; use `dev` or `origin/dev` for diffs.
+- Prefer automation: execute requested actions without confirmation unless blocked by missing info or safety/irreversibility.
 
-Agentic coding rules + commands for this monorepo.
+## Style Guide
 
-## Quick start (repo root)
+### General Principles
 
-```bash
-bun install
-bun dev
-bun typecheck          # (= bun turbo typecheck)
-bun turbo test         # CI-style suite
+- Keep things in one function unless composable or reusable
+- Avoid `try`/`catch` where possible
+- Avoid using the `any` type
+- Prefer single word variable names where possible
+- Use Bun APIs when possible, like `Bun.file()`
+- Rely on type inference when possible; avoid explicit type annotations or interfaces unless necessary for exports or clarity
+- Prefer functional array methods (flatMap, filter, map) over for loops; use type guards on filter to maintain type inference downstream
+
+### Naming
+
+Prefer single word names for variables and functions. Only use multiple words if necessary.
+
+```ts
+// Good
+const foo = 1
+function journal(dir: string) {}
+
+// Bad
+const fooBar = 1
+function prepareJournal(dir: string) {}
 ```
 
-## Monorepo rules (critical)
+Reduce total variable count by inlining when a value is only used once.
 
-- **Do NOT run tests from repo root**
-  - root `package.json`: `test` exits 1 intentionally
-  - root `bunfig.toml`: `[test].root = "./do-not-run-tests-from-root"`
-- Prefer explicit cwd when running package scripts:
+```ts
+// Good
+const journal = await Bun.file(path.join(dir, "journal.json")).json()
 
-```bash
-bun run --cwd packages/opencode test
-bun run --cwd packages/opencode typecheck
+// Bad
+const journalPath = path.join(dir, "journal.json")
+const journal = await Bun.file(journalPath).json()
 ```
 
-## Common commands
+### Destructuring
 
-### `packages/opencode` (core)
+Avoid unnecessary destructuring. Use dot notation to preserve context.
 
-```bash
-bun run --cwd packages/opencode dev
-bun run --cwd packages/opencode typecheck   # tsgo --noEmit
-bun run --cwd packages/opencode test        # bun test
-bun run --cwd packages/opencode test test/tool/tool.test.ts
-bun run --cwd packages/opencode test -t "<pattern>" test/tool/tool.test.ts
-bun run --cwd packages/opencode lint        # bun test --coverage
-bun run --cwd packages/opencode format      # prettier write src/**/*.ts
-bun run --cwd packages/opencode build
-./packages/opencode/script/build.ts --single
+```ts
+// Good
+obj.a
+obj.b
+
+// Bad
+const { a, b } = obj
 ```
 
-### `packages/app` (web UI)
+### Variables
 
-```bash
-bun run --cwd packages/app dev
+Prefer `const` over `let`. Use ternaries or early returns instead of reassignment.
+
+```ts
+// Good
+const foo = condition ? 1 : 2
+
+// Bad
+let foo
+if (condition) foo = 1
+else foo = 2
 ```
 
-## Architecture (high-level)
+### Control Flow
 
-### Monorepo layers
+Avoid `else` statements. Prefer early returns.
 
-- `packages/opencode`: core business logic + server + CLI/TUI entrypoints (Bun + TS)
-  - TUI: `packages/opencode/src/cli/cmd/tui/` (SolidJS + OpenTUI)
-- `packages/app` (`@opencode-ai/app`): the **interactive web client app** (SolidJS + Vite) built on `@opencode-ai/ui` + `@opencode-ai/sdk`
-  - Easy to confuse with `packages/web` — `app` is the product UI, not the docs/marketing site.
-- `packages/web` (`@opencode-ai/web`): the **website/docs** (Astro + Starlight + Solid) + share viewer (`/s/:id`) + docs/raw endpoints + build-time config schema generation
-- `packages/desktop`: desktop app (Tauri) wrapping `packages/app`
-- `packages/sdk/js`: TypeScript SDK used by UI clients
-- `packages/plugin`: source for `@opencode-ai/plugin`
-- `packages/util`: shared utilities
-- `packages/console/*`: console-related packages
+```ts
+// Good
+function foo() {
+  if (condition) return 1
+  return 2
+}
 
-### `packages/opencode` internal map
-
-- `src/server/`: server endpoints + service wiring
-- `src/tool/`: tool implementations (agent-facing surface)
-- `src/session/`: session/message/state machinery
-- `src/util/`: shared helpers
-- `script/`: build/generate/publish scripts
-
-### Core conventions (in `packages/opencode`)
-
-- Tools implement `Tool.Info` with `execute()`
-- Pass `sessionID`; use `App.provide()` for DI
-- Validate external inputs with Zod
-- Logging: `Log.create({ service: "name" })`
-- Persistence via `Storage`
-
-### Must-do step
-
-If you change server endpoints in `packages/opencode/src/server/server.ts`, regenerate the SDK:
-
-```bash
-./packages/opencode/script/generate.ts
+// Bad
+function foo() {
+  if (condition) return 1
+  else return 2
+}
 ```
 
-## Code style
+### Schema Definitions (Drizzle)
 
-Source of truth: `STYLE_GUIDE.md`.
+Use snake_case for field names so column names don't need to be redefined as strings.
 
-- Keep logic in one function unless clearly reusable
-- Avoid `else` (use early returns / IIFE)
-- Avoid `let` (prefer `const` + expressions)
-- Avoid `any`
-- Avoid unnecessary destructuring; prefer `obj.prop`
-- Avoid `try/catch` where possible
-- Prefer Bun APIs when appropriate (e.g. `Bun.file()`)
-- Prefer single-word identifiers when still descriptive
+```ts
+// Good
+const table = sqliteTable("session", {
+  id: text().primaryKey(),
+  project_id: text().notNull(),
+  created_at: integer().notNull(),
+})
 
-Formatting: Prettier config is in root `package.json` (`semi: false`, `printWidth: 120`).
+// Bad
+const table = sqliteTable("session", {
+  id: text("id").primaryKey(),
+  projectID: text("project_id").notNull(),
+  createdAt: integer("created_at").notNull(),
+})
+```
 
-## UI-specific constraints
+## Testing
 
-From `packages/app/AGENTS.md`:
-
-- For UI debugging, use Playwright MCP; app is already running at http://localhost:3000
-- **NEVER** try to restart the app or server process
-- Prefer `createStore` over many `createSignal` calls
-
-## CI / PR conventions
-
-From `CONTRIBUTING.md` + workflows:
-
-- CI runs `bun turbo typecheck` + `bun turbo test`
-- PRs are **issue-first**: reference an issue (`Fixes #123` / `Closes #123`)
-- PR titles follow conventional commits: `feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:` (optional scope)
-
-## Cursor / Copilot rules
-
-None found in this checkout.
-Searched: `.cursorrules`, `.cursor/rules/**`, `.github/copilot-instructions.md`
+- Avoid mocks as much as possible
+- Test actual implementation, do not duplicate logic into tests

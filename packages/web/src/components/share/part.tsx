@@ -1,6 +1,6 @@
 import map from "lang-map"
 import { DateTime } from "luxon"
-import { For, Show, Match, Switch, type JSX, createMemo, createSignal, type ParentProps, createEffect } from "solid-js"
+import { For, Show, Match, Switch, type JSX, createMemo, createSignal, type ParentProps } from "solid-js"
 import {
   IconHashtag,
   IconSparkles,
@@ -689,156 +689,31 @@ function TaskTool(props: ToolProps) {
 }
 
 export function FallbackTool(props: ToolProps) {
-  const isCallOmoAgent = props.tool === "call_omo_agent"
-  const isBackgroundTask = props.tool === "background_task"
-  const isBackgroundOutput = props.tool === "background_output"
-
-  const metaInfo = createMemo(() => {
-    if (isCallOmoAgent) {
-      const input = props.state.input as any
-      return {
-        description: input.description,
-        subagentType: input.subagent_type,
-        prompt: input.prompt?.slice(0, 300) + (input.prompt?.length > 300 ? "..." : ""),
-        runInBackground: input.run_in_background,
-        taskId: input.session_id ? `ses_${input.session_id}` : null,
-        sessionId: input.session_id,
-      }
-    }
-
-    if (isBackgroundTask) {
-      const input = props.state.input as any
-      return {
-        description: input.description,
-        taskId: input.task_id ? `bg_${input.task_id}` : null,
-      }
-    }
-
-    if (isBackgroundOutput) {
-      const input = props.state.input as any
-      return {
-        taskId: input.task_id ? `bg_${input.task_id}` : null,
-      }
-    }
-
-    return null
-  })
-
-  const executionTime = createMemo(() => {
-    const { start, end } = props.state.time || { start: 0, end: 0 }
-    return end - start
-  })
-
   return (
     <>
       <div data-component="tool-title">
-        <span data-slot="name">
-          {(() => {
-            if (isCallOmoAgent && metaInfo()?.description) {
-              return `${metaInfo()!.subagentType || "Agent"} Task: ${metaInfo()!.description}`
-            }
-            if (isBackgroundTask && metaInfo()?.description) {
-              return `Background Task: ${metaInfo()!.description}`
-            }
-            if (isBackgroundOutput && metaInfo()?.taskId) {
-              return `Background Output: ${metaInfo()!.taskId}`
-            }
-            return props.tool
-          })()}
-        </span>
+        <span data-slot="name">{props.tool}</span>
       </div>
-
-      <Show when={metaInfo()}>
-        {(info) => (
-          <div data-component="tool-meta">
-            <Show when={info().description}>
-              <div data-slot="meta-item">
-                <span data-slot="label">Description:</span>
-                <span data-slot="value">{info().description}</span>
-              </div>
-            </Show>
-
-            <Show when={info().subagentType}>
-              <div data-slot="meta-item">
-                <span data-slot="label">Subagent:</span>
-                <span data-slot="value" data-tag={info().subagentType}>
-                  {info().subagentType}
-                </span>
-              </div>
-            </Show>
-
-            <Show when={info().runInBackground !== undefined}>
-              <div data-slot="meta-item">
-                <span data-slot="label">Mode:</span>
-                <span data-slot="value">
-                  <span data-tag={info().runInBackground ? "background" : "sync"}>
-                    {info().runInBackground ? "Background" : "Sync"}
-                  </span>
-                </span>
-              </div>
-            </Show>
-
-            <Show when={info().prompt}>
-              <div data-slot="meta-item">
-                <span data-slot="label">Prompt:</span>
-                <span data-slot="value" data-prompt="true">
-                  <pre data-value>{info().prompt}</pre>
-                </span>
-              </div>
-            </Show>
-
-            <Show when={info().taskId}>
-              <div data-slot="meta-item">
-                <span data-slot="label">Task ID:</span>
-                <span data-slot="value" data-monospace="true">
-                  {info().taskId}
-                </span>
-              </div>
-            </Show>
-
-            <Show when={info().sessionId}>
-              <div data-slot="meta-item">
-                <span data-slot="label">Session ID:</span>
-                <span data-slot="value" data-monospace="true">
-                  {info().sessionId}
-                </span>
-              </div>
-            </Show>
-          </div>
-        )}
-      </Show>
-
-      <Show when={props.state.input && Object.keys(props.state.input).length > 0}>
-        <div data-component="tool-args">
-          <div data-slot="args-header">
-            <span data-label="Parameters"></span>
-            <span
-              data-count={`${Object.keys(props.state.input).length} ${Object.keys(props.state.input).length === 1 ? "entry" : "entries"}`}
-            ></span>
-          </div>
-          <For each={flattenToolArgs(props.state.input)}>
-            {(arg) => (
-              <>
-                <div></div>
-                <div>{arg[0]}</div>
-                <div>{arg[1]}</div>
-              </>
-            )}
-          </For>
-        </div>
-      </Show>
-
+      <div data-component="tool-args">
+        <For each={flattenToolArgs(props.state.input)}>
+          {(arg) => (
+            <>
+              <div></div>
+              <div>{arg[0]}</div>
+              <div>{arg[1]}</div>
+            </>
+          )}
+        </For>
+      </div>
       <Switch>
         <Match when={props.state.output}>
           <div data-component="tool-result">
-            <ResultsButton showCopy="Show output" hideCopy="Hide output">
+            <ResultsButton>
               <ContentText expand compact text={props.state.output} data-size="sm" data-color="dimmed" />
             </ResultsButton>
           </div>
         </Match>
       </Switch>
-
-      <ToolFooter time={executionTime()} />
     </>
   )
 }

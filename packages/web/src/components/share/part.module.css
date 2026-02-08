@@ -413,7 +413,7 @@
       background: var(--sl-color-divider);
     }
 
-    & > div:nth-child(3n + 3),
+    & > div:nth-child(3n + 2),
     & > div:nth-child(3n + 3) {
       font-size: 0.75rem;
       line-height: 1.5;
@@ -423,103 +423,6 @@
       padding-left: 0.125rem;
       word-break: break-word;
       color: var(--sl-color-text-secondary);
-    }
-  }
-
-  [data-component="tool-meta"] {
-    padding: 0.5rem 0;
-    border: 1px solid var(--sl-color-divider);
-    border-radius: 0.25rem;
-    background: var(--color-background-weak);
-    max-width: var(--lg-tool-width);
-
-    [data-slot="meta-item"] {
-      display: flex;
-      gap: 0.5rem;
-      padding: 0.25rem 0;
-      font-size: 0.8125rem;
-      line-height: 1.5;
-
-      [data-slot="label"] {
-        color: var(--sl-color-text-secondary);
-        font-weight: 500;
-        min-width: 6rem;
-      }
-
-      [data-slot="value"] {
-        color: var(--sl-color-text);
-        flex: 1;
-        word-break: break-word;
-      }
-    }
-
-    [data-slot="value"][data-monospace="true"] {
-      font-family: "Courier New", Courier, monospace;
-      font-size: 0.75rem;
-    }
-
-    [data-tag] {
-      padding: 0.125rem 0.375rem;
-      border-radius: 0.25rem;
-      font-size: 0.6875rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 0.03125rem;
-
-      &[data-tag="background"] {
-        background: var(--sl-color-purple-low);
-        color: var(--sl-color-white);
-      }
-
-      &[data-tag="sync"] {
-        background: var(--sl-color-blue-low);
-        color: var(--sl-color-white);
-      }
-
-      &[data-tag="explore"] {
-        background: var(--sl-color-orange-low);
-        color: var(--sl-color-white);
-      }
-
-      &[data-tag="librarian"] {
-        background: var(--sl-color-cyan-low);
-        color: var(--sl-color-white);
-      }
-    }
-
-    [data-slot="value"][data-prompt="true"] {
-      pre[data-value] {
-        font-family: "Courier New", Courier, monospace;
-        font-size: 0.75rem;
-        line-height: 1.5;
-        padding: 0.5rem;
-        background: var(--color-background-weak);
-        border-radius: 0.25rem;
-        border: 1px solid var(--sl-color-divider);
-        max-height: 10rem;
-        overflow: auto;
-        white-space: pre-wrap;
-        word-break: break-word;
-      }
-    }
-  }
-
-  [data-slot="args-header"] {
-    font-size: 0.6875rem;
-    color: var(--sl-color-text-secondary);
-    margin-bottom: 0.25rem;
-    padding-bottom: 0.25rem;
-    border-bottom: 1px solid var(--sl-color-divider);
-    display: flex;
-    justify-content: space-between;
-
-    [data-label] {
-      font-weight: 500;
-    }
-
-    [data-count] {
-      font-size: 0.75rem;
-      color: var(--sl-color-text-dimmed);
     }
   }
 }

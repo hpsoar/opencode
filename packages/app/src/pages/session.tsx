@@ -37,7 +37,14 @@ import { useComments } from "@/context/comments"
 import { ConstrainDragYAxis, getDraggableId } from "@/utils/solid-dnd"
 import { usePermission } from "@/context/permission"
 import { showToast } from "@opencode-ai/ui/toast"
-import { SessionHeader, SessionContextTab, SortableTab, FileVisual, NewSessionView } from "@/components/session"
+import {
+  SessionHeader,
+  SessionStatusPanel,
+  SessionContextTab,
+  SortableTab,
+  FileVisual,
+  NewSessionView,
+} from "@/components/session"
 import { navMark, navParams } from "@/utils/perf"
 import { same } from "@/utils/same"
 import { createOpenReviewFile, focusTerminalById } from "@/pages/session/helpers"
@@ -1535,6 +1542,7 @@ export default function Page() {
   return (
     <div class="relative bg-background-base size-full overflow-hidden flex flex-col">
       <SessionHeader />
+      <SessionStatusPanel />
       <div class="flex-1 min-h-0 flex flex-col md:flex-row">
         <SessionMobileTabs
           open={!isDesktop() && !!params.id}

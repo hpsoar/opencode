@@ -6,34 +6,26 @@ import { Button } from "@opencode-ai/ui/button"
 import { Tooltip } from "@opencode-ai/ui/tooltip"
 import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
-import { useLayout } from "@/context/layout"
 import type { IconProps } from "@opencode-ai/ui/icon"
 import { useLocal } from "@/context/local"
 import type { ToolPart } from "@opencode-ai/sdk/v2"
+import { activity } from "./session-activity"
 
 export function SessionStatusPanel() {
   const params = useParams()
   const sync = useSync()
   const sdk = useSDK()
-  const layout = useLayout()
   const local = useLocal()
 
   const sessionID = createMemo(() => params.id)
-  const sessionKey = createMemo(() => `${params.dir}${params.id ? "/" + params.id : ""}`)
-  const view = createMemo(() => layout.view(sessionKey()))
 
   const idle: SessionStatus = { type: "idle" }
   const status = createMemo(() => sync.data.session_status[sessionID() ?? ""] ?? idle)
-  const activity = createMemo(() => sync.data.session_activity?.[sessionID() ?? ""])
+  const last = createMemo(() => activity(sync.data, sessionID()))
 
   const busy = createMemo(() => status().type !== "idle")
 
-  const show = createMemo(() => {
-    if (!sessionID()) return false
-    if (!view().status?.shown()) return false
-    if (busy()) return true
-    return !!activity()?.last
-  })
+  const show = createMemo(() => !!sessionID())
 
   const kind = createMemo(() => {
     const s = status()
@@ -115,20 +107,18 @@ export function SessionStatusPanel() {
     }
 
     const s = status()
-    if (s.type === "idle") return
+    if (s.type === "idle") return "Idle"
     if (s.type === "retry") {
       if (s.message) return `Attempt ${s.attempt}: ${s.message}`
       return `Attempt ${s.attempt}`
     }
-    if (!s.operation) return "Processing"
-    if (s.detail) return `${s.operation} · ${s.detail}`
-    return s.operation
+    if (s.type === "busy") return "Processing"
   })
 
   const age = createMemo(() => {
-    const last = activity()?.last
-    if (!last) return
-    const diff = Date.now() - last
+    const stamp = last()
+    if (!stamp) return
+    const diff = Date.now() - stamp
     if (diff < 60_000) return `${Math.max(0, Math.floor(diff / 1000))}s`
     if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`
     return `${Math.floor(diff / 3_600_000)}h`

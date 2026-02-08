@@ -3,6 +3,7 @@ import { useParams } from "@solidjs/router"
 import { useSync } from "@/context/sync"
 import { useSDK } from "@/context/sdk"
 import { showToast, toaster } from "@opencode-ai/ui/toast"
+import { activity } from "./session-activity"
 
 const WARN_AFTER_MS = 90_000
 
@@ -13,7 +14,7 @@ export function SessionStallWarning() {
 
   const sessionID = createMemo(() => params.id)
   const status = createMemo(() => sync.data.session_status[sessionID() ?? ""] ?? { type: "idle" as const })
-  const last = createMemo(() => sync.data.session_activity?.[sessionID() ?? ""]?.last)
+  const last = createMemo(() => activity(sync.data, sessionID()))
 
   let toastId: number | undefined
   let timer: number | undefined
@@ -40,9 +41,9 @@ export function SessionStallWarning() {
         dismiss()
         return
       }
-      const t = last()
-      if (!t) return
-      if (Date.now() - t < WARN_AFTER_MS) {
+      const stamp = last()
+      if (!stamp) return
+      if (Date.now() - stamp < WARN_AFTER_MS) {
         dismiss()
         return
       }

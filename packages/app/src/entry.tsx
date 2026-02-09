@@ -96,7 +96,7 @@ render(
   () => (
     <PlatformProvider value={platform}>
       <AppBaseProviders>
-        <AppInterface />
+        <AppInterface defaultUrl={import.meta.env.VITE_DEFAULT_SERVER_URL} />
       </AppBaseProviders>
     </PlatformProvider>
   ),
